@@ -12,6 +12,7 @@
         android:layout_height="match_parent"
         android:keepScreenOn="true"
         app:use_artwork="false"
-        app:resize_mode="fill" />
+        app:resize_mode="fill"
+        app:surface_type="texture_view" /> <!-- 🔑 TextureView для работы rotation -->
 
 </FrameLayout>
