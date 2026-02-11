@@ -61,6 +61,7 @@ class MainActivity : AppCompatActivity() {
         playerView.useController = false
 
         // Важно для вертикальных экранов
+        @androidx.media3.common.util.UnstableApi
         playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
 
         player.addListener(object : Player.Listener {
@@ -110,7 +111,7 @@ class MainActivity : AppCompatActivity() {
 //    }
 private fun applyRotation() {
     val angle = rotations[rotationState]
-
+    @androidx.media3.common.util.UnstableApi
     try {
         player.setVideoEffects(
             listOf(
