@@ -34,7 +34,7 @@ class MainActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
 
     // ===== ПОВОРОТ =====
-    private val rotations = listOf(0f, 180f)
+    private val rotations = listOf(0f, 90f)
     private var rotationState = 0
     private val PREFS_NAME = "player_settings"
     private val KEY_ROTATION = "rotation_state"
