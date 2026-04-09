@@ -13,3 +13,7 @@
 .externalNativeBuild
 .cxx
 local.properties
+/.idea/.name
+/.idea/deploymentTargetSelector.xml
+/.idea/deviceManager.xml
+/.kotlin/errors/errors-1763637661468.log
