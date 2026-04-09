@@ -9,8 +9,6 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" android:minSdkVersion="34" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
 
@@ -53,11 +51,5 @@
             </intent-filter>
         </receiver>
 
-        <service
-            android:name=".boot.DreamListenerService"
-            android:enabled="true"
-            android:exported="true"
-            android:foregroundServiceType="shortService"
-            android:permission="android.permission.BIND_JOB_SERVICE" />
     </application>
 </manifest>

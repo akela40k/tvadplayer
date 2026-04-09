@@ -26,7 +26,6 @@ import android.os.Environment
 import android.preference.PreferenceManager
 import android.Manifest
 import android.provider.Settings
-import com.kardos.tvads.boot.DreamListenerService
 import com.kardos.tvads.boot.SettingsManager
 import com.kardos.tvads.boot.SettingsManagerConstants
 
@@ -82,15 +81,6 @@ class MainActivity : AppCompatActivity() {
             // Allow background activity start on Android 10+ when granted
             val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
             startActivity(intent)
-        }
-
-        if (autostart) {
-            val serviceIntent = Intent(this, DreamListenerService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                startForegroundService(serviceIntent)
-            } else {
-                startService(serviceIntent)
-            }
         }
     }
 
