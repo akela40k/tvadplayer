@@ -1,6 +1,7 @@
 package com.kardos.tvads.boot;
 
 import android.app.AlarmManager;
+import android.app.ActivityOptions;
 import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
@@ -8,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.media.tv.TvContract;
 import android.os.Build;
+import android.provider.Settings;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -17,15 +19,8 @@ public class BootReceiver extends BroadcastReceiver {
     private static final String TAG = BootReceiver.class.getSimpleName();
     private static final boolean DEBUG = true;
 
-    private Context mContext;
-
     @Override
     public void onReceive(Context context, Intent intent) {
-        mContext = context;
-        if (intent.getAction() != null &&
-                intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED)) {
-            startForegroundService();
-        }
         processEvent(context, intent);
     }
 
@@ -75,10 +70,16 @@ public class BootReceiver extends BroadcastReceiver {
             }
             i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             try {
-                long restartTime = 1000 * 5;
-                PendingIntent restartIntent = PendingIntent.getActivity(context, 0, i, PendingIntent.FLAG_IMMUTABLE);
-                AlarmManager mgr = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-                if (Build.VERSION.SDK_INT > 28) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE && !Settings.canDrawOverlays(context)) {
+                    Log.w(TAG, "Overlay permission not granted; background activity start may be blocked on Android 14+");
+                    long restartTime = 1000 * 5;
+                    PendingIntent restartIntent;
+                    ActivityOptions options = ActivityOptions.makeBasic();
+                    options.setPendingIntentCreatorBackgroundActivityStartMode(
+                            ActivityOptions.MODE_BACKGROUND_ACTIVITY_START_ALLOWED);
+                    restartIntent = PendingIntent.getActivity(
+                            context, 0, i, PendingIntent.FLAG_IMMUTABLE, options.toBundle());
+                    AlarmManager mgr = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
                     mgr.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + restartTime, restartIntent);
                 } else {
                     context.startActivity(i);
@@ -89,12 +90,4 @@ public class BootReceiver extends BroadcastReceiver {
         }
     }
 
-    private void startForegroundService() {
-        Intent i = new Intent(mContext, DreamListenerService.class);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            mContext.startForegroundService(i);
-        } else {
-            mContext.startService(i);
-        }
-    }
 }
