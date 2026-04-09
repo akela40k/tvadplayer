@@ -1,6 +1,8 @@
 package com.kardos.tvads
 
 import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
@@ -19,6 +21,13 @@ import androidx.media3.ui.PlayerView
 import java.io.File
 import androidx.media3.effect.*
 import android.graphics.Matrix
+import android.os.Build
+import android.os.Environment
+import android.preference.PreferenceManager
+import android.Manifest
+import com.kardos.tvads.boot.DreamListenerService
+import com.kardos.tvads.boot.SettingsManager
+import com.kardos.tvads.boot.SettingsManagerConstants
 
 
 class MainActivity : AppCompatActivity() {
@@ -27,6 +36,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var playerView: PlayerView
 
     private val LOG_TAG = "USB_PLAYER"
+    private val REQ_STORAGE = 1001
+    private var playbackStarted = false
+    private val autostart = true
 
     private var currentVideoIndex = 0
     private lateinit var videoFiles: List<File>
@@ -34,7 +46,7 @@ class MainActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
 
     // ===== ПОВОРОТ =====
-    private val rotations = listOf(0f, 90f)
+    private val rotations = listOf(0f, 180f)
     private var rotationState = 0
     private val PREFS_NAME = "player_settings"
     private val KEY_ROTATION = "rotation_state"
@@ -43,11 +55,87 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        ensureAutostartDefaults()
+
         loadRotationPreference()
         initializePlayer()
         applyRotation()
 
+        ensureStorageAccessThenStart()
+    }
+
+    private fun ensureAutostartDefaults() {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        SettingsManager(this).setBoolean(SettingsManagerConstants.BOOT_APP_ENABLED, autostart)
+        if (!prefs.contains(SettingsManagerConstants.LAUNCH_LIVE_CHANNELS)) {
+            SettingsManager(this).setBoolean(SettingsManagerConstants.LAUNCH_LIVE_CHANNELS, false)
+        }
+        if (!prefs.contains(SettingsManagerConstants.ON_WAKEUP)) {
+            SettingsManager(this).setBoolean(SettingsManagerConstants.ON_WAKEUP, autostart)
+        }
+        if (!prefs.contains(SettingsManagerConstants.LAUNCH_ACTIVITY)) {
+            SettingsManager(this).setString(SettingsManagerConstants.LAUNCH_ACTIVITY, packageName)
+        }
+
+        if (autostart) {
+            val serviceIntent = Intent(this, DreamListenerService::class.java)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                startForegroundService(serviceIntent)
+            } else {
+                startService(serviceIntent)
+            }
+        }
+    }
+
+    private fun ensureStorageAccessThenStart() {
+        if (playbackStarted) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && !Environment.isExternalStorageManager()) {
+            // Request "All files access" via settings screen
+            val intent = Intent(android.provider.Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+            intent.data = Uri.parse("package:$packageName")
+            startActivity(intent)
+            return
+        }
+
+        val needed = mutableListOf<String>()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(Manifest.permission.READ_MEDIA_VIDEO) != PackageManager.PERMISSION_GRANTED) {
+                needed.add(Manifest.permission.READ_MEDIA_VIDEO)
+            }
+        } else {
+            if (checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                needed.add(Manifest.permission.READ_EXTERNAL_STORAGE)
+            }
+        }
+
+        if (needed.isNotEmpty()) {
+            requestPermissions(needed.toTypedArray(), REQ_STORAGE)
+            return
+        }
+
+        playbackStarted = true
         findAndPlayFromUsb()
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == REQ_STORAGE) {
+            val granted = grantResults.all { it == PackageManager.PERMISSION_GRANTED }
+            if (granted) {
+                ensureStorageAccessThenStart()
+            } else {
+                Log.e(LOG_TAG, "Storage permission denied")
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        ensureStorageAccessThenStart()
     }
 
     // ================= PLAYER =================

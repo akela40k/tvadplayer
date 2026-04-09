@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">tv ad player</string>
+    <string name="null_intent">Cannot find activity to launch</string>
+    <string name="notification_text">Waiting for events</string>
 </resources>
