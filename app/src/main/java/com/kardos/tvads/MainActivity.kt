@@ -25,6 +25,7 @@ import android.os.Build
 import android.os.Environment
 import android.preference.PreferenceManager
 import android.Manifest
+import android.provider.Settings
 import com.kardos.tvads.boot.DreamListenerService
 import com.kardos.tvads.boot.SettingsManager
 import com.kardos.tvads.boot.SettingsManagerConstants
@@ -75,6 +76,12 @@ class MainActivity : AppCompatActivity() {
         }
         if (!prefs.contains(SettingsManagerConstants.LAUNCH_ACTIVITY)) {
             SettingsManager(this).setString(SettingsManagerConstants.LAUNCH_ACTIVITY, packageName)
+        }
+
+        if (autostart && Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && !Settings.canDrawOverlays(this)) {
+            // Allow background activity start on Android 10+ when granted
+            val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+            startActivity(intent)
         }
 
         if (autostart) {
